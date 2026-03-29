@@ -1,0 +1,30 @@
+{
+  "name": "solana-meme-bot",
+  "version": "1.0.0",
+  "description": "Solana Meme Coin Trading Bot - Pump.fun to Binance Pipeline",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "ts-node src/main.ts",
+    "test-telegram": "ts-node src/utils/test-telegram.ts",
+    "test-wallet": "ts-node src/utils/test-wallet.ts"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.0",
+    "@jup-ag/api": "^6.0.0",
+    "axios": "^1.7.0",
+    "bs58": "^5.0.0",
+    "dotenv": "^16.4.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.0",
+    "ts-node": "^10.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
