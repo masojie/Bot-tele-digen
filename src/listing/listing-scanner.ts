@@ -101,17 +101,6 @@ export class ListingScanner {
     try {
       const res = await axios.get('https://www.binance.com/bapi/composite/v1/public/cms/article/list/query', { params: { type: 1, catalogId: 48, pageNo: 1, pageSize: 10 }, timeout: 8000 });
       return (res.data?.data?.catalogs?.[0]?.articles || []).map((a: any) => {
-        const m = (a.title||'').match(/Will List (\w+)/i) || (a.title||'').match(/\(([A-Z]{2,10})\)/);
-        return m ? m[1].toUpperCase() : null;
-      }).filter(Boolean);
-    } catch { return []; }
-  }
+        const m = (a.title||'').m **...**
 
-  private async findOnSolana(symbol: string): Promise<string | null> {
-    try {
-      const res = await axios.get(`https://api.dexscreener.com/latest/dex/search?q=${symbol}`, { timeout: 5000 });
-      const pair = (res.data?.pairs || []).find((p: any) => p.chainId === 'solana' && p.baseToken?.symbol?.toUpperCase() === symbol.toUpperCase() && parseFloat(p.liquidity?.usd||'0') > 5000);
-      return pair?.baseToken?.address || null;
-    } catch { return null; }
-  }
-                        }
+_This response is too long to display in full._
