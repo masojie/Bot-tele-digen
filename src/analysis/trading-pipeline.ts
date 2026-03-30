@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { WhaleTracker, WhaleSnapshot } from '../blockchain/whale-tracker';
+import { ActivityType } from './bot-detector';
 
 export interface TokenCandidate {
   mint: string;
@@ -14,6 +16,10 @@ export interface TokenCandidate {
   finalScore: number;
   shouldBuy: boolean;
   skipReason?: string;
+  whaleSnapshot?: WhaleSnapshot;
+  activityType?: ActivityType;
+  activityLabel?: string;
+  activityEmoji?: string;
 }
 
 export interface DexData {
@@ -37,6 +43,11 @@ export interface BinancePotential {
 
 export class TradingPipeline {
   private scannedMints: Set<string> = new Set();
+  private whaleTracker: WhaleTracker;
+
+  constructor() {
+    this.whaleTracker = new WhaleTracker();
+  }
 
   async fetchPumpFunTokens(): Promise<Partial<TokenCandidate>[]> {
     try {
@@ -52,7 +63,7 @@ export class TradingPipeline {
         this.scannedMints.add(coin.mint);
         if (this.scannedMints.size > 2000) {
           const first = this.scannedMints.values().next().value;
-          this.scannedMints.delete(first);
+          this.scannedMints.delete(first!);
         }
         fresh.push({
           mint: coin.mint,
@@ -132,15 +143,18 @@ export class TradingPipeline {
     const rawTokens = await this.fetchPumpFunTokens();
     console.log(`[Pipeline] ${rawTokens.length} token baru dari pump.fun`);
     const candidates: TokenCandidate[] = [];
+
     for (const raw of rawTokens) {
       if (!raw.mint) continue;
       if ((raw.devHoldPct || 0) > 0.20) continue;
       if ((raw.replyCount || 0) < 3) continue;
+
       const dex = await this.validateOnDexScreener(raw.mint);
       if (!dex) continue;
       if (dex.liquidityUSD < 8_000) continue;
       if (dex.volumeUSD1h < 500) continue;
       if (dex.priceChange1h > 500) continue;
+
       const binancePotential = this.analyzeBinancePotential(raw, dex);
       const communityScore = Math.min(1, (raw.replyCount || 0) / 200);
       const dexScore = Math.min(1, dex.liquidityUSD / 50_000) * 0.4 +
@@ -148,9 +162,17 @@ export class TradingPipeline {
         (dex.priceChange5m > 0 && dex.priceChange5m < 100 ? 0.3 : 0);
       const finalScore = dexScore * 0.50 + communityScore * 0.20 + binancePotential.score * 0.30;
       const shouldBuy = finalScore >= 0.60 && binancePotential.risk !== 'HIGH';
-      candidates.push({ ...(raw as TokenCandidate), dex, binancePotential, finalScore, shouldBuy });
+
+      const whaleSnapshot = await this.whaleTracker.getWhaleSnapshot(raw.mint);
+
+      candidates.push({ ...(raw as TokenCandidate), dex, binancePotential, finalScore, shouldBuy, whaleSnapshot });
     }
+
     return candidates.sort((a, b) => b.finalScore - a.finalScore);
+  }
+
+  getWhaleTracker(): WhaleTracker {
+    return this.whaleTracker;
   }
 
   async analyzeMissedOpportunity(mint: string): Promise<string> {
@@ -186,4 +208,4 @@ export class TradingPipeline {
   }
 
   private sleep(ms: number) { return new Promise(r => setTimeout(r, ms)); }
-}
+                          }
