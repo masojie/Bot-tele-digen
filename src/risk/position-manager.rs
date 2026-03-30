@@ -68,7 +68,7 @@ export class PositionManager {
         } else if (pnlPct >= CONFIG.TAKE_PROFIT_PCT) {
           shouldClose = true; reason = 'TAKE_PROFIT';
         } else if (heldMinutes > 240 && pnlPct < 0) {
-          shouldClose = true; reason = 'STOP_LOSS';
+          shouldClose = true; reason = 'TIMEOUT';
         }
 
         if (shouldClose) {
@@ -113,3 +113,19 @@ export class PositionManager {
     };
   }
 }
+```
+
+---
+```
+✅ config.ts            → src/config.ts
+✅ main.ts              → src/main.ts
+✅ solana-wallet.ts     → src/blockchain/solana-wallet.ts
+✅ position-manager.ts  → src/risk/position-manager.ts
+⬜ telegram-alert.ts
+⬜ trading-pipeline.ts
+⬜ bot-detector.ts
+⬜ listing-scanner.ts
+⬜ test-wallet.ts
+⬜ test-telegram.ts
+⬜ .env.example
+⬜ install.sh
