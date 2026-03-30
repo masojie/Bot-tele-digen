@@ -120,17 +120,3 @@ export class SolanaWallet {
 }
 ```
 
----
-```
-✅ config.ts          → src/config.ts
-✅ main.ts            → src/main.ts
-✅ solana-wallet.ts   → src/blockchain/solana-wallet.ts
-⬜ position-manager.ts
-⬜ telegram-alert.ts
-⬜ trading-pipeline.ts
-⬜ bot-detector.ts
-⬜ listing-scanner.ts
-⬜ test-wallet.ts
-⬜ test-telegram.ts
-⬜ .env.example
-⬜ install.sh
