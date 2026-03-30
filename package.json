@@ -11,18 +11,20 @@
     "test-wallet": "ts-node src/utils/test-wallet.ts"
   },
   "dependencies": {
-    "@solana/web3.js": "^1.95.0",
     "@jup-ag/api": "^6.0.0",
+    "@solana/web3.js": "^1.95.0",
     "axios": "^1.7.0",
     "bs58": "^5.0.0",
+    "chromadb": "^3.4.0",
     "dotenv": "^16.4.0",
+    "langchain": "^1.2.37",
     "node-cron": "^3.0.3"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
     "@types/node": "^20.0.0",
     "@types/node-cron": "^3.0.0",
-    "ts-node": "^10.9.0"
+    "ts-node": "^10.9.0",
+    "typescript": "^5.4.0"
   },
   "engines": {
     "node": ">=18.0.0"

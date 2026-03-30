@@ -1,44 +1,21 @@
-/**
- * MAIN.TS - Version for monitoring mode
- * Comment out parts that need position-manager and wallet
- */
-
-// Comment out yang bermasalah dulu
-// import { PositionManager } from './risk/position-manager';
-// import { SolanaWallet } from './blockchain/solana-wallet';
-
 import { TradingPipeline } from './analysis/trading-pipeline';
 import { BotDetector } from './analysis/bot-detector';
-import { ListingScanner } from './listing/listing-scanner';
 import { WhaleTracker } from './blockchain/whale-tracker';
+import { ListingScanner } from './listing/listing-scanner';
+import { VectorMemory } from './memory/vector-memory';
+import { RLTradingAgent } from './rl/trading-agent';
 
-// Dummy classes untuk monitoring
 class DummyPositionManager {
   canOpenNew() { return { canOpen: true, sizeSOL: 0.05 }; }
-  open() {}
-  monitorAll() {}
-  getStats() { return { totalPositions: 0, pnlSOL: 0, balance: 10 }; }
   async calculateProfit() { return 0; }
-}
-
-class DummyWallet {
-  async getSOLBalance() { return 10; }
-  async buyToken() { return { success: false, txHash: null }; }
-  async getTokenBalance() { return 0; }
-}
-
-class DummyAlert {
-  async testConnection() { return true; }
-  async sendBuyAlert() {}
-  async sendListingAlert() {}
-  async sendHourlyReport() {}
-  async sendStartupMessage() {}
+  getStats() { return { balance: 10, totalPositions: 0 }; }
 }
 
 async function main() {
   console.log('╔══════════════════════════════════════════════════════╗');
-  console.log('║     MONITOR MODE - TradingPipeline Active           ║');
-  console.log('║  + BotDetector + WhaleTracker + ListingScanner      ║');
+  console.log('║     AI TRADING AGENT with MEMORY & RL               ║');
+  console.log('║  + TradingPipeline + BotDetector + WhaleTracker     ║');
+  console.log('║  + VectorMemory + Reinforcement Learning            ║');
   console.log('╚══════════════════════════════════════════════════════╝');
 
   const pipeline = new TradingPipeline();
@@ -46,13 +23,16 @@ async function main() {
   const whaleTracker = new WhaleTracker();
   const listing = new ListingScanner();
   const positions = new DummyPositionManager();
-  const dummyWallet = new DummyWallet();
-  const dummyAlert = new DummyAlert();
+  
+  // Inisialisasi Memory & RL
+  const memory = new VectorMemory();
+  await memory.init();
+  const rlAgent = new RLTradingAgent();
 
-  console.log('\n✅ Mode monitoring aktif!');
-  console.log('📡 Data: DexScreener (via pipeline)');
-  console.log('🤖 AI Agents aktif: TradingPipeline, BotDetector, WhaleTracker');
-  console.log('⏱️  Scan setiap 60 detik. Tekan Ctrl+C untuk berhenti.\n');
+  console.log('\n✅ AI Trading Agent aktif dengan kemampuan BELAJAR!');
+  console.log('🧠 VectorMemory: menyimpan pola token & hasil trading');
+  console.log('🎯 Reinforcement Learning: belajar dari profit/loss');
+  console.log('⏱️  Scan setiap 60 detik\n');
 
   let scanCount = 0;
 
@@ -64,32 +44,55 @@ async function main() {
       console.log(`[SCAN #${scanCount}] ${now}`);
       console.log(`${'='.repeat(60)}`);
 
-      // Run pipeline
       const candidates = await pipeline.runFullPipeline();
       console.log(`\n🔍 Ditemukan ${candidates.length} token kandidat`);
 
       for (const token of candidates.slice(0, 8)) {
-        console.log(`\n${'─'.repeat(50)}`);
-        console.log(`🪙 ${token.symbol} | ${token.name}`);
-        console.log(`📋 CA: ${token.mint}`);
-        console.log(`💰 Price: $${token.dex?.priceUSD?.toFixed(12) || 'N/A'}`);
-        console.log(`💧 Liq: $${(token.dex?.liquidityUSD || 0).toLocaleString()}`);
-        console.log(`📈 Vol 1h: $${(token.dex?.volumeUSD1h || 0).toLocaleString()}`);
-        console.log(`📊 1h: ${(token.dex?.priceChange1h || 0).toFixed(1)}%`);
-        console.log(`🎯 Score: ${((token.finalScore || 0) * 100).toFixed(0)}%`);
-        console.log(`✅ Should Buy: ${token.shouldBuy ? 'YES' : 'NO'}`);
+        // Cari memori token serupa
+        const similarTokens = await memory.recallSimilar(token);
+        const historicalWinRate = similarTokens.length > 0
+          ? similarTokens.filter((t: any) => t.outcome > 0).length / similarTokens.length
+          : 0.5;
+
+        // RL decision
+        const stateKey = rlAgent.getStateKey(token, positions.getStats());
+        const rlAction = rlAgent.getAction(stateKey);
 
         // Bot detector
         const botResult = await botCheck.check(token.mint, {
           txCount5m_buys: token.dex?.txCount5m || 0,
           txCount5m_sells: 0,
         });
-        console.log(`\n🤖 Bot: ${botResult.activityEmoji} ${botResult.activityType} | ${botResult.activityLabel}`);
-        console.log(`   Risk: ${(botResult.botRiskScore * 100).toFixed(0)}% | Safe: ${botResult.isSafe ? '✅' : '❌'}`);
 
-        // Whale tracker
-        const whale = await whaleTracker.getWhaleSnapshot(token.mint);
-        console.log(`\n🐋 Whale: ${whale.signal} | ${whale.summary}`);
+        // Gabungan keputusan
+        const shouldBuy = token.shouldBuy && 
+                          botResult.isSafe && 
+                          historicalWinRate > 0.5 &&
+                          rlAction === 0;
+
+        console.log(`\n${'─'.repeat(50)}`);
+        console.log(`🪙 ${token.symbol} | ${token.name}`);
+        console.log(`📋 CA: ${token.mint}`);
+        console.log(`💰 Price: $${token.dex?.priceUSD?.toFixed(12) || 'N/A'}`);
+        console.log(`💧 Liq: $${(token.dex?.liquidityUSD || 0).toLocaleString()}`);
+        console.log(`📊 1h: ${(token.dex?.priceChange1h || 0).toFixed(1)}%`);
+        console.log(`🎯 Score: ${((token.finalScore || 0) * 100).toFixed(0)}%`);
+        console.log(`🧠 Memory: ${similarTokens.length} similar patterns | WinRate: ${(historicalWinRate * 100).toFixed(0)}%`);
+        console.log(`🤖 RL Action: ${rlAgent.getActionName(rlAction)}`);
+        console.log(`✅ Decision: ${shouldBuy ? '🔥 BUY' : '⏸️ HOLD'}`);
+
+        // Simulasi learning (nanti di real trading akan update dengan profit real)
+        if (shouldBuy) {
+          // Simulasi buy (tanpa eksekusi real)
+          setTimeout(async () => {
+            const profit = Math.random() * 0.2 - 0.1; // simulasi profit -10% s/d +10%
+            await memory.remember(token, { profit });
+            const reward = profit > 0 ? 1 : profit < 0 ? -1 : 0;
+            const nextStateKey = rlAgent.getStateKey(token, positions.getStats());
+            rlAgent.update(stateKey, 0, reward, nextStateKey);
+            console.log(`📚 Learning: ${token.symbol} profit ${(profit * 100).toFixed(1)}% | Reward: ${reward}`);
+          }, 5000);
+        }
       }
 
       console.log(`\n⏳ Next scan in 60 seconds...`);
