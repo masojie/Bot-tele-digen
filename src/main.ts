@@ -32,13 +32,27 @@ async function memeLoop() {
       if (!token.shouldBuy) continue;
       const { canOpen, sizeSOL } = positions.canOpenNew(balance);
       if (!canOpen) break;
-      const botResult = await botCheck.check(token.mint, { ...token.dex, txCount5m_buys: token.dex?.txCount5m || 0, txCount5m_sells: 0 });
+      const botResult = await botCheck.check(token.mint, {
+        ...token.dex,
+        txCount5m_buys: token.dex?.txCount5m || 0,
+        txCount5m_sells: 0
+      });
       if (!botResult.isSafe) { console.log(`⚠️ SKIP $${token.symbol}: ${botResult.flags[0]}`); continue; }
       console.log(`✅ BUY $${token.symbol} | Score: ${(token.finalScore * 100).toFixed(0)}% | ${sizeSOL.toFixed(4)} SOL`);
       const buyResult = await wallet.buyToken(token.mint, sizeSOL);
       if (buyResult.success) {
         const tokenBalance = await wallet.getTokenBalance(token.mint);
-        positions.open({ mint: token.mint, symbol: token.symbol, name: token.name, entryPriceUSD: token.dex?.priceUSD || 0, amountSOL: sizeSOL, tokenAmount: tokenBalance, txHash: buyResult.txHash!, openedAt: new Date(), isListingPlay: false });
+        positions.open({
+          mint: token.mint,
+          symbol: token.symbol,
+          name: token.name,
+          entryPriceUSD: token.dex?.priceUSD || 0,
+          amountSOL: sizeSOL,
+          tokenAmount: tokenBalance,
+          txHash: buyResult.txHash!,
+          openedAt: new Date(),
+          isListingPlay: false
+        });
         await alert.sendBuyAlert(token, sizeSOL, buyResult.txHash);
       }
       await sleep(2000);
@@ -56,7 +70,10 @@ async function listingLoop() {
     const signals = await listing.scan();
     for (const signal of signals) {
       if (signal.action === 'WATCH') continue;
-      if (signal.action === 'ALERT' || !signal.solanaMint) { await alert.sendListingAlert(signal); continue; }
+      if (signal.action === 'ALERT' || !signal.solanaMint) {
+        await alert.sendListingAlert(signal);
+        continue;
+      }
       const balance = await wallet.getSOLBalance();
       const { canOpen, sizeSOL } = positions.canOpenNew(balance);
       if (!canOpen) continue;
@@ -64,7 +81,17 @@ async function listingLoop() {
       const buyResult = await wallet.buyToken(signal.solanaMint, listingSize);
       if (buyResult.success) {
         const tokenBalance = await wallet.getTokenBalance(signal.solanaMint);
-        positions.open({ mint: signal.solanaMint, symbol: signal.symbol, name: signal.symbol, entryPriceUSD: 0, amountSOL: listingSize, tokenAmount: tokenBalance, txHash: buyResult.txHash!, openedAt: new Date(), isListingPlay: true });
+        positions.open({
+          mint: signal.solanaMint,
+          symbol: signal.symbol,
+          name: signal.symbol,
+          entryPriceUSD: 0,
+          amountSOL: listingSize,
+          tokenAmount: tokenBalance,
+          txHash: buyResult.txHash!,
+          openedAt: new Date(),
+          isListingPlay: true
+        });
         await alert.sendListingAlert(signal, listingSize, buyResult.txHash);
       }
     }
@@ -77,7 +104,11 @@ async function hourlyReport() {
   try {
     const balance = await wallet.getSOLBalance();
     const stats = positions.getStats();
-    await alert.sendHourlyReport({ ...stats, balanceSOL: balance, pnlSOL: balance - startBalanceSOL });
+    await alert.sendHourlyReport({
+      ...stats,
+      balanceSOL: balance,
+      pnlSOL: balance - startBalanceSOL
+    });
   } catch {}
 }
 
@@ -105,17 +136,17 @@ main().catch(err => { console.error('Fatal:', err); process.exit(1); });
 
 ---
 
-## 11. `.env.example`
+Sudah di-copas? Kalau sudah, ketik file selanjutnya:
 ```
-RPC_URL=https://mainnet.helius-rpc.com/?api-key=GANTI_INI
-HELIUS_API_KEY=GANTI_INI
-WALLET_PRIVATE_KEY=GANTI_INI
-TELEGRAM_BOT_TOKEN=GANTI_INI
-TELEGRAM_CHAT_ID=GANTI_INI
-MAX_POSITION_SOL=0.05
-MAX_PORTFOLIO_RISK_PCT=2
-STOP_LOSS_PCT=15
-TAKE_PROFIT_PCT=50
-MAX_OPEN_POSITIONS=3
-MEME_SCAN_INTERVAL_SEC=30
-LISTING_SCAN_INTERVAL_MIN=5
+✅ config.ts      → src/config.ts
+✅ main.ts        → src/main.ts
+⬜ solana-wallet.ts
+⬜ position-manager.ts
+⬜ telegram-alert.ts
+⬜ trading-pipeline.ts
+⬜ bot-detector.ts
+⬜ listing-scanner.ts
+⬜ test-wallet.ts
+⬜ test-telegram.ts
+⬜ .env.example
+⬜ install.sh
